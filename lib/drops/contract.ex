@@ -37,6 +37,34 @@ defmodule Drops.Contract do
   @doc since: "0.1.0"
   @callback conform(data :: map()) :: {:ok, map()} | {:error, list()}
 
+  @doc ~S"""
+  Generates a JSON schema.
+
+  ## Examples
+
+      iex> defmodule UserContract do
+      ...>   use Drops.Contract
+      ...>
+      ...>   schema do
+      ...>     %{
+      ...>       required(:name) => type(:string),
+      ...>       required(:age) => type(:integer)
+      ...>     }
+      ...>   end
+      ...> end
+      iex> UserContract.json_schema()
+      %{
+        "properties" => %{
+          "age" => %{"type" => "integer"},
+          "name" => %{"type" => "string"}
+        },
+        "required" => ["age", "name"],
+        "title" => "UserContract",
+        "type" => "object"
+      }
+  """
+  @callback json_schema() :: map()
+
   defmacro __using__(opts) do
     quote do
       import Drops.Contract
@@ -93,6 +121,10 @@ defmodule Drops.Contract do
                  )}
             end
         end
+      end
+
+      def json_schema do
+        Drops.JsonSchema.to_json_schema(__MODULE__)
       end
 
       defp apply_rules(output) do

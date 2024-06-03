@@ -46,7 +46,7 @@ defmodule Drops.JsonSchemaTest do
                },
                "required" => ["nested_map", "some_atom", "some_boolean"]
              } =
-               JsonSchema.to_json_schema(contract)
+               contract.json_schema()
     end
   end
 end

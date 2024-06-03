@@ -1,9 +1,9 @@
 defmodule Drops.JsonSchema do
+  @moduledoc false
+
   alias Drops.Types
 
   def to_json_schema(contract) when is_atom(contract) do
-    dbg(contract.schema)
-
     %{
       "title" => get_title(contract)
     }
