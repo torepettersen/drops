@@ -123,6 +123,7 @@ defmodule Drops.Contract do
         end
       end
 
+      @impl true
       def json_schema do
         Drops.JsonSchema.to_json_schema(__MODULE__)
       end

@@ -421,6 +421,10 @@ defmodule Drops.Type.DSL do
     type(:boolean)
   end
 
+  def boolean(predicates) when is_list(predicates) do
+    type(:boolean, predicates)
+  end
+
   @doc ~S"""
   Returns a map type specification.
 

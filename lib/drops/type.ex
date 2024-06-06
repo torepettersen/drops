@@ -174,7 +174,8 @@ defmodule Drops.Type do
 
       deftype(
         primitive: Type.infer_primitive(unquote(spec)),
-        constraints: Type.infer_constraints(unquote(spec))
+        constraints: Type.infer_constraints(unquote(spec)),
+        description: nil
       )
 
       def new(attributes) when is_list(attributes) do
@@ -182,16 +183,22 @@ defmodule Drops.Type do
       end
 
       def new(spec) do
+        {description, spec} = pop_description(spec)
+
         new(
           primitive: infer_primitive(spec),
-          constraints: infer_constraints(spec)
+          constraints: infer_constraints(spec),
+          description: description
         )
       end
 
       def new(spec, constraints) when is_list(constraints) do
+        {description, spec} = pop_description(spec)
+
         new(
           primitive: infer_primitive(spec),
-          constraints: infer_constraints({:type, {spec, constraints}})
+          constraints: infer_constraints({:type, {spec, constraints}}),
+          description: description
         )
       end
 
@@ -277,4 +284,12 @@ defmodule Drops.Type do
   def predicate(name, args) do
     {:predicate, {name, args}}
   end
+
+  @doc false
+  def pop_description({:type, {type, attributes}} = spec) do
+    {description, new_attributes} = Keyword.pop(attributes, :description)
+    {description, {:type, {type, new_attributes}}}
+  end
+
+  def pop_description(spec), do: {nil, spec}
 end
