@@ -1,8 +1,6 @@
 defmodule Drops.JsonSchemaTest do
   use Drops.ContractCase, async: true
 
-  alias Drops.JsonSchema
-
   describe "to_json_schema/1" do
     contract do
       schema do
@@ -17,6 +15,7 @@ defmodule Drops.JsonSchemaTest do
           optional(:some_date_time) =>
             type(:date_time, description: "some_date_time description"),
           optional(:some_list) => list(:string, description: "some_list description"),
+          optional(:some_enum) => integer(in?: [1, 2, 3]),
           required(:nested_map) => %{
             required(:nested_property) => string()
           }
@@ -25,7 +24,7 @@ defmodule Drops.JsonSchemaTest do
     end
 
     test "creates json schema", %{contract: contract} do
-      assert %{
+      assert contract.json_schema() == %{
                "title" => "TestContract",
                "type" => "object",
                "properties" => %{
@@ -70,16 +69,20 @@ defmodule Drops.JsonSchemaTest do
                      "description" => "some_list description"
                    }
                  },
+                 "some_enum" => %{
+                   "type" => "integer",
+                   "enum" => [1, 2, 3]
+                 },
                  "nested_map" => %{
                    "properties" => %{
                      "nested_property" => %{"type" => "string"}
                    },
-                   "required" => ["nested_property"]
+                   "required" => ["nested_property"],
+                   "type" => "object"
                  }
                },
                "required" => ["nested_map", "some_atom", "some_boolean"]
-             } =
-               contract.json_schema()
+             }
     end
   end
 end

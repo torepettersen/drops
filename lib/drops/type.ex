@@ -286,7 +286,7 @@ defmodule Drops.Type do
   end
 
   @doc false
-  def pop_description({:type, {type, attributes}} = spec) do
+  def pop_description({:type, {type, attributes}} = _spec) do
     {description, new_attributes} = Keyword.pop(attributes, :description)
     {description, {:type, {type, new_attributes}}}
   end

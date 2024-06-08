@@ -14,9 +14,9 @@ defmodule Drops.JsonSchema do
     contract |> Atom.to_string() |> String.split(".") |> List.last()
   end
 
-  defp to_property(%Types.Primitive{primitive: type} = primitive) do
-    type
-    |> to_json_type()
+  defp to_property(%Types.Primitive{constraints: constraints} = primitive) do
+    constraints
+    |> handle_predicate()
     |> maybe_add_description(primitive)
   end
 
@@ -51,14 +51,33 @@ defmodule Drops.JsonSchema do
     Atom.to_string(name)
   end
 
-  defp to_json_type(:string), do: %{"type" => "string"}
-  defp to_json_type(:integer), do: %{"type" => "integer"}
-  defp to_json_type(:float), do: %{"type" => "number"}
-  defp to_json_type(:boolean), do: %{"type" => "boolean"}
-  defp to_json_type(:atom), do: %{"type" => "string"}
-  defp to_json_type(:date), do: %{"type" => "string", "format" => "date"}
-  defp to_json_type(:date_time), do: %{"type" => "string", "format" => "date-time"}
-  defp to_json_type(nil), do: %{"type" => "null"}
+  defp handle_predicate({:predicate, predicate}) when is_tuple(predicate),
+    do: handle_predicate(predicate)
+
+  defp handle_predicate({:type?, :string}), do: %{"type" => "string"}
+  defp handle_predicate({:type?, :integer}), do: %{"type" => "integer"}
+  defp handle_predicate({:type?, :float}), do: %{"type" => "number"}
+  defp handle_predicate({:type?, :boolean}), do: %{"type" => "boolean"}
+  defp handle_predicate({:type?, :atom}), do: %{"type" => "string"}
+  defp handle_predicate({:type?, nil}), do: %{"type" => "null"}
+  defp handle_predicate({:type?, :date}), do: %{"type" => "string", "format" => "date"}
+
+  defp handle_predicate({:type?, :date_time}),
+    do: %{"type" => "string", "format" => "date-time"}
+
+  defp handle_predicate({:in?, list}) when is_list(list), do: %{"enum" => list}
+
+  defp handle_predicate({:and, predicate}) when is_list(predicate) do
+    handle_predicate(predicate)
+  end
+
+  defp handle_predicate(predicate) when is_list(predicate) do
+    predicate
+    |> Enum.map(&handle_predicate/1)
+    |> Enum.reduce(%{}, &Map.merge/2)
+  end
+
+  defp handle_predicate(_), do: %{}
 
   defp maybe_add_description(map, %{description: description})
        when is_binary(description) do
