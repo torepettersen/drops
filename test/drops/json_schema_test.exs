@@ -1,87 +1,154 @@
 defmodule Drops.JsonSchemaTest do
   use Drops.ContractCase, async: true
 
-  describe "to_json_schema/1" do
+  @types [
+    atom: %{"type" => "string"},
+    boolean: %{"type" => "boolean"},
+    float: %{"type" => "number"},
+    integer: %{"type" => "integer"},
+    nil: %{"type" => "null"},
+    string: %{"type" => "string"},
+    date: %{"type" => "string", "format" => "date"},
+    date_time: %{"type" => "string", "format" => "date-time"}
+  ]
+
+  for {type, properties} <- @types do
+    describe "contract with type #{type}" do
+      contract do
+        schema do
+          %{
+            optional(:test) => type(unquote(type))
+          }
+        end
+      end
+
+      test "generates json schema type", %{contract: contract} do
+        assert contract.json_schema() == %{
+                 "title" => "TestContract",
+                 "type" => "object",
+                 "properties" => %{
+                   "test" => unquote(Macro.escape(properties))
+                 }
+               }
+      end
+    end
+  end
+
+  describe "contract with type :list" do
     contract do
       schema do
         %{
-          required(:some_atom) => type(:atom, description: "some_atom description"),
-          required(:some_boolean) => boolean(description: "some_boolean description"),
-          optional(:some_float) => float(description: "some_float description"),
-          optional(:some_integer) => integer(description: "some_integer description"),
-          optional(:some_nil) => type(nil, description: "some_nil description"),
-          optional(:some_string) => string(description: "some_string description"),
-          optional(:some_date) => type(:date, description: "some_date description"),
-          optional(:some_date_time) =>
-            type(:date_time, description: "some_date_time description"),
-          optional(:some_list) => list(:string, description: "some_list description"),
-          optional(:some_enum) => integer(in?: [1, 2, 3]),
-          required(:nested_map) => %{
-            required(:nested_property) => string()
+          optional(:test) => list(:string)
+        }
+      end
+    end
+
+    test "generates json schema type", %{contract: contract} do
+      assert contract.json_schema() == %{
+               "title" => "TestContract",
+               "type" => "object",
+               "properties" => %{
+                 "test" => %{
+                   "type" => "array",
+                   "items" => %{
+                     "type" => "string"
+                   }
+                 }
+               }
+             }
+    end
+  end
+
+  describe "contract with nested map" do
+    contract do
+      schema do
+        %{
+          optional(:map) => %{
+            optional(:test) => string()
           }
         }
       end
     end
 
-    test "creates json schema", %{contract: contract} do
+    test "generates json schema nested map", %{contract: contract} do
       assert contract.json_schema() == %{
                "title" => "TestContract",
                "type" => "object",
                "properties" => %{
-                 "some_atom" => %{
-                   "type" => "string",
-                   "description" => "some_atom description"
-                 },
-                 "some_boolean" => %{
-                   "type" => "boolean",
-                   "description" => "some_boolean description"
-                 },
-                 "some_float" => %{
-                   "type" => "number",
-                   "description" => "some_float description"
-                 },
-                 "some_integer" => %{
-                   "type" => "integer",
-                   "description" => "some_integer description"
-                 },
-                 "some_nil" => %{
-                   "type" => "null",
-                   "description" => "some_nil description"
-                 },
-                 "some_string" => %{
-                   "type" => "string",
-                   "description" => "some_string description"
-                 },
-                 "some_date" => %{
-                   "type" => "string",
-                   "format" => "date",
-                   "description" => "some_date description"
-                 },
-                 "some_date_time" => %{
-                   "type" => "string",
-                   "format" => "date-time",
-                   "description" => "some_date_time description"
-                 },
-                 "some_list" => %{
-                   "type" => "array",
-                   "items" => %{
-                     "type" => "string",
-                     "description" => "some_list description"
-                   }
-                 },
-                 "some_enum" => %{
-                   "type" => "integer",
-                   "enum" => [1, 2, 3]
-                 },
-                 "nested_map" => %{
+                 "map" => %{
+                   "type" => "object",
                    "properties" => %{
-                     "nested_property" => %{"type" => "string"}
-                   },
-                   "required" => ["nested_property"],
-                   "type" => "object"
+                     "test" => %{
+                       "type" => "string"
+                     }
+                   }
                  }
+               }
+             }
+    end
+  end
+
+  describe "contract with description" do
+    contract do
+      schema do
+        %{
+          optional(:test) => type(:atom, description: "some description")
+        }
+      end
+    end
+
+    test "generates json schema with description", %{contract: contract} do
+      assert contract.json_schema() == %{
+               "title" => "TestContract",
+               "type" => "object",
+               "properties" => %{
+                 "test" => %{
+                   "type" => "string",
+                   "description" => "some description"
+                 }
+               }
+             }
+    end
+  end
+
+  describe "contract with required field" do
+    contract do
+      schema do
+        %{
+          required(:test) => string()
+        }
+      end
+    end
+
+    test "generates json schema with required field", %{contract: contract} do
+      assert contract.json_schema() == %{
+               "title" => "TestContract",
+               "type" => "object",
+               "properties" => %{
+                 "test" => %{"type" => "string"}
                },
-               "required" => ["nested_map", "some_atom", "some_boolean"]
+               "required" => ["test"]
+             }
+    end
+  end
+
+  describe "contract with in?" do
+    contract do
+      schema do
+        %{
+          required(:test) => string(in?: ["foo", "bar"])
+        }
+      end
+    end
+
+    test "generates json schema with enum", %{contract: contract} do
+      assert contract.json_schema() == %{
+               "title" => "TestContract",
+               "type" => "object",
+               "properties" => %{
+                 "test" => %{"type" => "string", "enum" => ["foo", "bar"]}
+               },
+               "required" => ["test"]
              }
     end
   end

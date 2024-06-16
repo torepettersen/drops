@@ -36,15 +36,21 @@ defmodule Drops.JsonSchema do
 
     %{
       "type" => "object",
-      "properties" => properties,
-      "required" => get_required(map)
+      "properties" => properties
     }
+    |> maybe_add_required(map)
   end
 
-  defp get_required(%Types.Map{keys: keys}) do
-    keys
-    |> Enum.filter(fn key -> key.presence == :required end)
-    |> Enum.map(&key_name/1)
+  defp maybe_add_required(map, %Types.Map{keys: keys}) do
+    required =
+      keys
+      |> Enum.filter(fn key -> key.presence == :required end)
+      |> Enum.map(&key_name/1)
+
+    case required do
+      [_ | _] -> Map.put(map, "required", required)
+      [] -> map
+    end
   end
 
   defp key_name(%Types.Map.Key{path: [name]}) do
