@@ -41,6 +41,10 @@ defmodule Drops.JsonSchema do
     |> maybe_add_required(map)
   end
 
+  defp to_property(%Types.Union{left: left, right: right}) do
+    %{"anyOf" => [to_property(left), to_property(right)]}
+  end
+
   defp maybe_add_required(map, %Types.Map{keys: keys}) do
     required =
       keys

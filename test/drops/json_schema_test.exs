@@ -88,6 +88,31 @@ defmodule Drops.JsonSchemaTest do
     end
   end
 
+  describe "contract with maybe" do
+    contract do
+      schema do
+        %{
+          optional(:test) => maybe(:string)
+        }
+      end
+    end
+
+    test "generates json schema with anyOf", %{contract: contract} do
+      assert contract.json_schema() == %{
+               "title" => "TestContract",
+               "type" => "object",
+               "properties" => %{
+                 "test" => %{
+                   "anyOf" => [
+                     %{"type" => "null"},
+                     %{"type" => "string"}
+                   ]
+                 }
+               }
+             }
+    end
+  end
+
   describe "contract with description" do
     contract do
       schema do
